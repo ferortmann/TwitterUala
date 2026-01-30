@@ -1,0 +1,17 @@
+[Bb]in/
+[Oo]bj/
+out/
+artifacts/
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.nupkg
+*.snupkg
+packages/
+.nuget/packages/
+*.cache
+*.log
+docker-compose*.yml
+**/Dockerfile.*
