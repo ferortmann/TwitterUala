@@ -1,4 +1,6 @@
 ﻿using ApiTwitterUala.Domain.Context;
+using ApiTwitterUala.DTOs;
+using ApiTwitterUala.Mappers;
 using ApiTwitterUala.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -17,24 +19,25 @@ namespace ApiTwitterUala.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Follow([FromBody] Follow follow)
+        public async Task<IActionResult> Follow([FromBody] FollowDto followDto)
         {
-            if (follow == null)
-                return BadRequest();
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            if (follow.UserId == follow.UserFollowerId)
-                return BadRequest("Un usuario no puede seguir a si mismo.");
-
-            var targetExists = await _context.Users.AnyAsync(u => u.Id == follow.UserId);
-            var followerExists = await _context.Users.AnyAsync(u => u.Id == follow.UserFollowerId);
-            if (!targetExists || !followerExists)
+            var targetExists = await _context.Users.AnyAsync(u => u.Id == followDto.UserId);
+            if (!targetExists)
                 return NotFound();
 
-            var existing = await _context.Follows.FindAsync(follow.UserId, follow.UserFollowerId);
-            if (existing is not null)
-                return Conflict();
+            var followerExists = await _context.Users.AnyAsync(u => u.Id == followDto.UserFollowerId);
+            if (!followerExists)
+                return NotFound(new { Message = "Seguidor no enconrados." });
 
-            _context.Follows.Add(follow);
+            var existing = await _context.Follows.FindAsync(followDto.UserId, followDto.UserFollowerId);
+            if (existing is not null)
+                return Conflict(new { Message = "Ya se están siguiendo." });
+
+            var entity = followDto.ToEntity();
+            _context.Follows.Add(entity);
             await _context.SaveChangesAsync();
 
             return Created();
