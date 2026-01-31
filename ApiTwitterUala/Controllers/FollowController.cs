@@ -30,7 +30,7 @@ namespace ApiTwitterUala.Controllers
 
             var followerExists = await _context.Users.AnyAsync(u => u.Id == followDto.UserFollowerId);
             if (!followerExists)
-                return NotFound(new { Message = "Seguidor no enconrados." });
+                return NotFound(new { Message = "Seguidor no enconrado." });
 
             var existing = await _context.Follows.FindAsync(followDto.UserId, followDto.UserFollowerId);
             if (existing is not null)

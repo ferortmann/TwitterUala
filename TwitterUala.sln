@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApiTwitterUala", "ApiTwitte
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApiTwitterUala.Domain", "ApiTwitterUala.Domain\ApiTwitterUala.Domain.csproj", "{05090367-6E1B-4C67-9CAE-BA2EDC78484C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApiTwitterUala.Tests", "ApiTwitterUala.Tests\ApiTwitterUala.Tests.csproj", "{B20951B6-7018-23AC-C1FC-B2649B1FF244}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{05090367-6E1B-4C67-9CAE-BA2EDC78484C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{05090367-6E1B-4C67-9CAE-BA2EDC78484C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{05090367-6E1B-4C67-9CAE-BA2EDC78484C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B20951B6-7018-23AC-C1FC-B2649B1FF244}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B20951B6-7018-23AC-C1FC-B2649B1FF244}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B20951B6-7018-23AC-C1FC-B2649B1FF244}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B20951B6-7018-23AC-C1FC-B2649B1FF244}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
