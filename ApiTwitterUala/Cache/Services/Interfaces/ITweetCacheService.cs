@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ApiTwitterUala.Cache.Services
+namespace ApiTwitterUala.Cache.Services.Interfaces
 {
     public interface ITweetCacheService
     {

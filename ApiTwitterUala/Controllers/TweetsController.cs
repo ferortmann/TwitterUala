@@ -3,8 +3,8 @@ using ApiTwitterUala.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ApiTwitterUala.Mappers;
-using ApiTwitterUala.Cache.Services;
 using ApiTwitterUala.BackgroundTasks;
+using ApiTwitterUala.Cache.Services.Interfaces;
 
 namespace ApiTwitterUala.Controllers
 {
@@ -61,7 +61,6 @@ namespace ApiTwitterUala.Controllers
 
             if (_tweetCache is not null)
             {
-                // Enqueue background work to update followers' caches only (do not update creator's own cache here)
                 var followerIds = await _context.Follows
                     .AsNoTracking()
                     .Where(f => f.UserId == entity.UserId)
@@ -70,7 +69,6 @@ namespace ApiTwitterUala.Controllers
 
                 _taskQueue.QueueBackgroundWorkItem(async ct =>
                 {
-                    // use followerIds (already materialized) and only call cache APIs
                     using var sem = new SemaphoreSlim(20);
 
                     var tasks = followerIds.Select(async fid =>
@@ -78,43 +76,43 @@ namespace ApiTwitterUala.Controllers
                         await sem.WaitAsync(ct);
                         try
                         {
-                            // Try to prepend into follower's cached timeline page 1
                             try
                             {
                                 await _tweetCache.PrependTweetToUserAsync(fid, viewDto, DefaultPageSize, maxPagesToInvalidate: 2, ct);
                             }
                             catch
                             {
-                                // swallow per-user prepend errors
                             }
 
-                            // If follower has no cache (or prepend was a no-op), populate page from DB
                             try
                             {
                                 var cached = await _tweetCache.GetUserTweetPageAsync(fid, 1, DefaultPageSize, ct);
                                 if (cached is null)
                                 {
-                                    // build follower's page 1 from DB: tweets from users that follower follows
                                     var followedByFollower = await _context.Follows
                                         .AsNoTracking()
                                         .Where(ff => ff.UserFollowerId == fid)
                                         .Select(ff => ff.UserId)
                                         .ToListAsync(ct);
 
-                                    var page = await (from t in _context.Tweets.AsNoTracking()
-                                                      join u in _context.Users.AsNoTracking() on t.UserId equals u.Id
-                                                      where followedByFollower.Contains(t.UserId)
-                                                      orderby t.CreatedAt descending
-                                                      select new TweetViewDto
-                                                      {
-                                                          Id = t.Id,
-                                                          UserId = t.UserId,
-                                                          Content = t.Content,
-                                                          CreatedAt = t.CreatedAt,
-                                                          UserName = u.UserName
-                                                      })
-                                                    .Take(DefaultPageSize)
-                                                    .ToListAsync(ct);
+                                    var page = await _context.Tweets
+                                        .AsNoTracking()
+                                        .Where(t => followedByFollower.Contains(t.UserId))
+                                        .Join(
+                                            _context.Users.AsNoTracking(),
+                                            t => t.UserId,
+                                            u => u.Id,
+                                            (t, u) => new TweetViewDto
+                                            {
+                                                Id = t.Id,
+                                                UserId = t.UserId,
+                                                Content = t.Content,
+                                                CreatedAt = t.CreatedAt,
+                                                UserName = u.UserName
+                                            })
+                                        .OrderByDescending(dto => dto.CreatedAt)
+                                        .Take(DefaultPageSize)
+                                        .ToListAsync(ct);
 
                                     try
                                     {
@@ -122,13 +120,11 @@ namespace ApiTwitterUala.Controllers
                                     }
                                     catch
                                     {
-                                        // swallow cache set errors
                                     }
                                 }
                             }
                             catch
                             {
-                                // swallow cache check/load errors
                             }
                         }
                         finally

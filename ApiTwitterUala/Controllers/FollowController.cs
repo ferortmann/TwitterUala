@@ -4,7 +4,7 @@ using ApiTwitterUala.Mappers;
 using ApiTwitterUala.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using ApiTwitterUala.Cache.Services;
+using ApiTwitterUala.Cache.Services.Interfaces;
 
 namespace ApiTwitterUala.Controllers
 {

@@ -9,7 +9,7 @@ namespace ApiTwitterUala.DTOs
 
         [Required]
         [MaxLength(280)]
-        [RegularExpression(@"^[a-zA-Z0-9 &ñÑçÇáéíóúàèìòùâêîôûäëïöüÁÉÍÓÚÀÈÌÒÙÂÊÎÔÛÄËÏÖÜ\.\-_' \t\r\n\p{So}\p{Cs}]*$", ErrorMessage = "Caracteres incorrectos.")]
+        [RegularExpression(@"^[a-zA-Z0-9 &ñÑçÇáéíóúàèìòùâêîôûäëïöüÁÉÍÓÚÀÈÌÒÙÂÊÎÔÛÄËÏÖÜ\.\-_'!?:;,\t\r\n\p{So}\p{Cs}]*$", ErrorMessage = "Caracteres incorrectos.")]
         public string Content { get; set; } = string.Empty;
 
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)

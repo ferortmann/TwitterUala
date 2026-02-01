@@ -1,8 +1,9 @@
-using ApiTwitterUala.Cache.Services;
 using ApiTwitterUala.Domain.Context;
 using ApiTwitterUala.Domain.Entities;
 using ApiTwitterUala.BackgroundTasks;
 using Microsoft.EntityFrameworkCore;
+using ApiTwitterUala.Cache.Services.Interfaces;
+using ApiTwitterUala.Cache.Services.Impl;
 
 var builder = WebApplication.CreateBuilder(args);
 

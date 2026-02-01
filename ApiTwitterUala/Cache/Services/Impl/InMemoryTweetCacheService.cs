@@ -3,15 +3,15 @@ using System.Text.Json;
 using System.Linq;
 using ApiTwitterUala.DTOs;
 using Microsoft.Extensions.Caching.Distributed;
+using ApiTwitterUala.Cache.Services.Interfaces;
 
-namespace ApiTwitterUala.Cache.Services
+namespace ApiTwitterUala.Cache.Services.Impl
 {
     public class InMemoryTweetCacheService : ITweetCacheService
     {
         private readonly JsonSerializerOptions _jsonOptions;
         private readonly DistributedCacheEntryOptions _cacheOptions;
 
-        // in-process storage (key -> (serializedData, expiration))
         private static readonly ConcurrentDictionary<string, (string Data, DateTimeOffset Expiration)> _localCache = new();
 
         public InMemoryTweetCacheService()

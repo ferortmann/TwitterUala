@@ -1,8 +1,9 @@
 using System.Text.Json;
 using Microsoft.Extensions.Caching.Distributed;
 using System.Collections.Concurrent;
+using ApiTwitterUala.Cache.Services.Interfaces;
 
-namespace ApiTwitterUala.Cache.Services
+namespace ApiTwitterUala.Cache.Services.Impl
 {
         public class InMemoryFollowCacheService : IFollowCacheService
     {

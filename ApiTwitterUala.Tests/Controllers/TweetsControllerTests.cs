@@ -16,7 +16,7 @@ namespace ApiTwitterUala.Tests.Controllers
         public async Task Create_ShouldPersistTweet_WhenDtoIsValidAndUserExists()
         {
             using var context = TestDbContextFactory.CreateInMemoryContext();
-            var controller = new TweetsController(context);
+            var controller = new TweetsController(context, null, new NoOpBackgroundTaskQueue());
 
             var dto = new TweetDto
             {
@@ -37,7 +37,7 @@ namespace ApiTwitterUala.Tests.Controllers
         public async Task Create_ShouldReturnBadRequest_WhenUserDoesNotExist()
         {
             using var context = TestDbContextFactory.CreateInMemoryContext();
-            var controller = new TweetsController(context);
+            var controller = new TweetsController(context, null, new NoOpBackgroundTaskQueue());
 
             var dto = new TweetDto
             {
