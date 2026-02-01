@@ -19,16 +19,11 @@ namespace ApiTwitterUala.Tests.Controllers
 
         private static void EnsureUsersExist(AppDbContext context)
         {
-            // Create users required by tests if they don't exist
             if (!context.Users.AnyAsync(u => u.Id == UserA).GetAwaiter().GetResult())
-            {
                 context.Users.Add(new ApiTwitterUala.Domain.Entities.User { Id = UserA, UserName = "usuario1234" });
-            }
 
             if (!context.Users.AnyAsync(u => u.Id == UserB).GetAwaiter().GetResult())
-            {
                 context.Users.Add(new ApiTwitterUala.Domain.Entities.User { Id = UserB, UserName = "usuario9876" });
-            }
 
             context.SaveChanges();
         }
@@ -51,9 +46,7 @@ namespace ApiTwitterUala.Tests.Controllers
 
             var result = await controller.Follow(dto, CancellationToken.None);
 
-            // Assert API result indicates success (Created / Ok)
             result.Should().NotBeNull();
-            // Verify persisted
             var persisted = context.Follows.Find(dto.UserId, dto.UserFollowerId);
             persisted.Should().NotBeNull();
         }
@@ -95,7 +88,7 @@ namespace ApiTwitterUala.Tests.Controllers
             var dto = new FollowDto
             {
                 UserId = UserA,
-                UserFollowerId = UserA // same
+                UserFollowerId = UserA 
             };
 
             ModelValidator.ValidateAndPopulateModelState(dto, controller);

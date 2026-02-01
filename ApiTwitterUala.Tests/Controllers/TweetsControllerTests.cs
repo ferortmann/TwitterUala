@@ -50,5 +50,25 @@ namespace ApiTwitterUala.Tests.Controllers
             var result = await controller.Create(dto);
             result.Should().BeOfType<NotFoundObjectResult>();
         }
+
+        [Fact]
+        public async Task Create_ShouldReturnBadRequest_WhenContentContainsForbiddenCharacter()
+        {
+            using var context = TestDbContextFactory.CreateInMemoryContext();
+            var controller = new TweetsController(context, null, new NoOpBackgroundTaskQueue());
+
+            var dto = new TweetDto
+            {
+                UserId = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                Content = "Contenido inválido *"
+            };
+
+            ModelValidator.ValidateAndPopulateModelState(dto, controller);
+
+            var result = await controller.Create(dto);
+
+            controller.ModelState.IsValid.Should().BeFalse();
+            result.Should().BeOfType<BadRequestObjectResult>();
+        }
     }
 }
