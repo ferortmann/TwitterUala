@@ -78,8 +78,8 @@ namespace ApiTwitterUala.Tests.Controllers
             using var context = TestDbContextFactory.CreateInMemoryContext();
             var controller = new TweetsController(context, null, new NoOpBackgroundTaskQueue());
 
-            var authorId = Guid.Parse("11111111-1111-1111-1111-111111111111"); // seeded user
-            var followerId = Guid.Parse("22222222-2222-2222-2222-222222222222"); // seeded follower
+            var authorId = Guid.Parse("11111111-1111-1111-1111-111111111111"); 
+            var followerId = Guid.Parse("22222222-2222-2222-2222-222222222222"); 
 
             var now = DateTime.UtcNow;
             var t1 = new Tweet
@@ -107,7 +107,7 @@ namespace ApiTwitterUala.Tests.Controllers
             var ok = result as OkObjectResult;
             ok!.Value.Should().BeAssignableTo<System.Collections.IEnumerable>();
 
-            var tweets = ((System.Collections.Generic.IEnumerable<TweetViewDto>)ok.Value).ToList();
+            var tweets = (ok.Value as System.Collections.Generic.IEnumerable<TweetViewDto>)?.ToList() ?? [];
             tweets.Should().HaveCount(2);
             tweets[0].Content.Should().Be("Tweet A");
             tweets[1].Content.Should().Be("Tweet B");
