@@ -33,7 +33,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// Disable HTTPS redirection when running inside a container to avoid redirect loops
+var runningInContainer = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
+if (!runningInContainer)
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthorization();
 

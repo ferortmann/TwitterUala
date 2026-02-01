@@ -13,5 +13,4 @@ packages/
 .nuget/packages/
 *.cache
 *.log
-docker-compose*.yml
 **/Dockerfile.*
