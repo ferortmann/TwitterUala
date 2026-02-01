@@ -1,17 +1,28 @@
+using ApiTwitterUala.Cache.Services;
 using ApiTwitterUala.Domain.Context;
 using ApiTwitterUala.Domain.Entities;
+using ApiTwitterUala.BackgroundTasks;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
 builder.Services.AddControllers();
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseInMemoryDatabase("TwitterUala"));
+
+// Use in-memory distributed cache (remove Redis dependency)
+builder.Services.AddDistributedMemoryCache();
+
+// Register in-memory cache services (replace Redis implementations)
+builder.Services.AddScoped<IFollowCacheService, InMemoryFollowCacheService>();
+builder.Services.AddScoped<ITweetCacheService, InMemoryTweetCacheService>();
+
+// Background task queue and hosted worker
+builder.Services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
+builder.Services.AddHostedService<QueuedHostedService>();
 
 var app = builder.Build();
 
@@ -38,6 +49,24 @@ using (var scope = app.Services.CreateScope())
 
         context.Users.AddRange(user1, user2);
         context.SaveChanges();
+
+        // Add 5 sample tweets for user1 if none exist
+        if (!context.Tweets.Any(t => t.UserId == user1.Id))
+        {
+            var now = DateTime.UtcNow;
+            var tweets = Enumerable.Range(1, 5)
+                .Select(i => new Tweet
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = user1.Id,
+                    Content = $"Tweet de prueba {i}",
+                    CreatedAt = now.AddSeconds(-i)
+                })
+                .ToList();
+
+            context.Tweets.AddRange(tweets);
+            context.SaveChanges();
+        }
     }
 }
 

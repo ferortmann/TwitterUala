@@ -4,6 +4,7 @@ using ApiTwitterUala.Mappers;
 using ApiTwitterUala.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using ApiTwitterUala.Cache.Services;
 
 namespace ApiTwitterUala.Controllers
 {
@@ -13,83 +14,122 @@ namespace ApiTwitterUala.Controllers
     {
         private readonly AppDbContext _context;
 
-        public FollowController(AppDbContext context)
+        private readonly IFollowCacheService? _followCache;
+        public FollowController(AppDbContext context, IFollowCacheService? followCache = null)
         {
             _context = context;
+            _followCache = followCache;
         }
 
         [HttpPost]
-        public async Task<IActionResult> Follow([FromBody] FollowDto followDto)
+        public async Task<IActionResult> Follow([FromBody] FollowDto followDto, CancellationToken ct)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var targetExists = await _context.Users.AnyAsync(u => u.Id == followDto.UserId);
+            var targetExists = await _context.Users.AsNoTracking().AnyAsync(u => u.Id == followDto.UserId, ct);
             if (!targetExists)
                 return NotFound();
 
-            var followerExists = await _context.Users.AnyAsync(u => u.Id == followDto.UserFollowerId);
+            var followerExists = await _context.Users.AsNoTracking().AnyAsync(u => u.Id == followDto.UserFollowerId, ct);
             if (!followerExists)
                 return NotFound(new { Message = "Seguidor no enconrado." });
 
-            var existing = await _context.Follows.FindAsync(followDto.UserId, followDto.UserFollowerId);
-            if (existing is not null)
+            var existing = await _context.Follows.AsNoTracking().AnyAsync(f => f.UserId == followDto.UserId && f.UserFollowerId == followDto.UserFollowerId, ct);
+            if (existing)
                 return Conflict(new { Message = "Ya se están siguiendo." });
 
             var entity = followDto.ToEntity();
             _context.Follows.Add(entity);
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync(ct);
+                if (_followCache is not null)
+                {
+                    // Fully asynchronous: pass the request CancellationToken to the cache operation
+                    await _followCache.InvalidateFollowersAsync(followDto.UserId, ct);
+                }
+            }
+            catch (DbUpdateException ex)
+            {
+                return Conflict(new { Message = "Ya se están siguiendo.", Detail = ex.Message });
+            }
 
             return Created();
         }
 
         [HttpDelete("{userId:guid}/{userFollowerId:guid}")]
-        public async Task<IActionResult> Unfollow(Guid userId, Guid userFollowerId)
+        public async Task<IActionResult> Unfollow(Guid userId, Guid userFollowerId, CancellationToken ct)
         {
-            var entity = await _context.Follows.FindAsync(userId, userFollowerId);
+            var entity = await _context.Follows.FindAsync(new object?[] { userId, userFollowerId }, ct);
             if (entity is null)
-                return NotFound();
+                return NotFound();  
 
             _context.Follows.Remove(entity);
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(ct);
+            if (_followCache is not null)
+                await _followCache.InvalidateFollowersAsync(userId, ct);
             return NoContent();
         }
 
         [HttpGet("{userId:guid}/followers")]
-        public async Task<ActionResult<IEnumerable<User>>> GetFollowers(Guid userId)
+        public async Task<ActionResult<IEnumerable<User>>> GetFollowers(Guid userId, CancellationToken ct)
         {
-            var followerIds = await _context.Follows
-                .Where(f => f.UserId == userId)
-                .Select(f => f.UserFollowerId)
-                .ToListAsync();
+            List<Guid>? followerIds = null;
+
+            if (_followCache is not null)
+            {
+                var cachedIds = await _followCache.GetFollowerIdsAsync(userId, ct);
+                if (cachedIds is not null)
+                    followerIds = cachedIds;
+            }
+
+            if (followerIds is null)
+            {
+                followerIds = await _context.Follows
+                    .AsNoTracking()
+                    .Where(f => f.UserId == userId)
+                    .Select(f => f.UserFollowerId)
+                    .ToListAsync(ct);
+
+                if (_followCache is not null)
+                {
+                    try { await _followCache.SetFollowerIdsAsync(userId, followerIds, ct); } catch { }
+                }
+            }
 
             var followers = await _context.Users
+                .AsNoTracking()
                 .Where(u => followerIds.Contains(u.Id))
-                .ToListAsync();
+                .ToListAsync(ct);
 
             return Ok(followers);
         }
 
         [HttpGet("{userId:guid}/following")]
-        public async Task<ActionResult<IEnumerable<User>>> GetFollowing(Guid userId)
+        public async Task<ActionResult<IEnumerable<User>>> GetFollowing(Guid userId, CancellationToken ct)
         {
             var followingIds = await _context.Follows
+                .AsNoTracking()
                 .Where(f => f.UserFollowerId == userId)
                 .Select(f => f.UserId)
-                .ToListAsync();
+                .ToListAsync(ct);
 
             var following = await _context.Users
+                .AsNoTracking()
                 .Where(u => followingIds.Contains(u.Id))
-                .ToListAsync();
+                .ToListAsync(ct);
 
             return Ok(following);
         }
 
         [HttpGet("{userId:guid}/is-following/{targetId:guid}", Name = "IsFollowing")]
-        public async Task<ActionResult<bool>> IsFollowing(Guid userId, Guid targetId)
+        public async Task<ActionResult<bool>> IsFollowing(Guid userId, Guid targetId, CancellationToken ct)
         {
-            var exists = await _context.Follows.FindAsync(userId, targetId);
-            return Ok(exists is not null);
+            var exists = await _context.Follows
+                .AsNoTracking()
+                .AnyAsync(f => f.UserId == userId && f.UserFollowerId == targetId, ct);
+            return Ok(exists);
         }
     }
 }
