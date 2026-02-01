@@ -45,10 +45,7 @@ namespace ApiTwitterUala.Controllers
             {
                 await _context.SaveChangesAsync(ct);
                 if (_followCache is not null)
-                {
-                    // Fully asynchronous: pass the request CancellationToken to the cache operation
                     await _followCache.InvalidateFollowersAsync(followDto.UserId, ct);
-                }
             }
             catch (DbUpdateException ex)
             {

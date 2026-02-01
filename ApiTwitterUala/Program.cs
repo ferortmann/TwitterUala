@@ -14,14 +14,11 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseInMemoryDatabase("TwitterUala"));
 
-// Use in-memory distributed cache (remove Redis dependency)
 builder.Services.AddDistributedMemoryCache();
 
-// Register in-memory cache services (replace Redis implementations)
 builder.Services.AddScoped<IFollowCacheService, InMemoryFollowCacheService>();
 builder.Services.AddScoped<ITweetCacheService, InMemoryTweetCacheService>();
 
-// Background task queue and hosted worker
 builder.Services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
 builder.Services.AddHostedService<QueuedHostedService>();
 
@@ -48,7 +45,25 @@ using (var scope = app.Services.CreateScope())
             UserName = "usuario9876"
         };
 
-        context.Users.AddRange(user1, user2);
+        var user3 = new User
+        {
+            Id = Guid.Parse("33333333-3333-3333-3333-333333333333"),
+            UserName = "usuario_alpha"
+        };
+
+        var user4 = new User
+        {
+            Id = Guid.Parse("44444444-4444-4444-4444-444444444444"),
+            UserName = "usuario_beta"
+        };
+
+        var user5 = new User
+        {
+            Id = Guid.Parse("55555555-5555-5555-5555-555555555555"),
+            UserName = "usuario_gamma"
+        };
+
+        context.Users.AddRange(user1, user2, user3, user4, user5);
         context.SaveChanges();
 
         // Add 5 sample tweets for user1 if none exist
