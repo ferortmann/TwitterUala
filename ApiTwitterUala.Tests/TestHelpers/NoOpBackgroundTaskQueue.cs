@@ -1,4 +1,4 @@
-using ApiTwitterUala.BackgroundTasks;
+using ApiTwitterUala.Services.BackgroundTasks;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,7 +14,6 @@ namespace ApiTwitterUala.Tests.TestHelpers
 
         public void QueueBackgroundWorkItem(Func<CancellationToken, Task> workItem)
         {
-            // Ejecutar en background de forma segura (fire-and-forget) para pruebas
             _ = Task.Run(() => workItem(CancellationToken.None));
         }
     }

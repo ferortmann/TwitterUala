@@ -1,6 +1,6 @@
 using System.Threading;
 
-namespace ApiTwitterUala.BackgroundTasks
+namespace ApiTwitterUala.Services.BackgroundTasks
 {
     public interface IBackgroundTaskQueue
     {

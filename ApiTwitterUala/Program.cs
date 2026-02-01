@@ -1,7 +1,9 @@
 using ApiTwitterUala.Domain.Context;
 using ApiTwitterUala.Domain.Entities;
-using ApiTwitterUala.BackgroundTasks;
 using Microsoft.EntityFrameworkCore;
+using ApiTwitterUala.Services.Cache.Services.Interfaces;
+using ApiTwitterUala.Services.Cache.Services.Impl;
+using ApiTwitterUala.Services.BackgroundTasks;
 using ApiTwitterUala.Cache.Services.Interfaces;
 using ApiTwitterUala.Cache.Services.Impl;
 
@@ -18,6 +20,7 @@ builder.Services.AddDistributedMemoryCache();
 
 builder.Services.AddScoped<IFollowCacheService, InMemoryFollowCacheService>();
 builder.Services.AddScoped<ITweetCacheService, InMemoryTweetCacheService>();
+builder.Services.AddScoped<ITweetCacheUpdaterService, InMemoryTweetCacheUpdaterService>();
 
 builder.Services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
 builder.Services.AddHostedService<QueuedHostedService>();

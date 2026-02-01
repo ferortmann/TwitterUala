@@ -1,4 +1,4 @@
-namespace ApiTwitterUala.DTOs
+namespace ApiTwitterUala.Services.DTOs
 {
     public class TweetViewDto
     {

@@ -1,5 +1,5 @@
 using ApiTwitterUala.Controllers;
-using ApiTwitterUala.DTOs;
+using ApiTwitterUala.Services.DTOs;
 using ApiTwitterUala.Tests.TestHelpers;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
@@ -7,6 +7,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
+using ApiTwitterUala.Domain.Entities;
 
 namespace ApiTwitterUala.Tests.Controllers
 {
@@ -69,6 +70,47 @@ namespace ApiTwitterUala.Tests.Controllers
 
             controller.ModelState.IsValid.Should().BeFalse();
             result.Should().BeOfType<BadRequestObjectResult>();
+        }
+
+        [Fact]
+        public async Task Timeline_ShouldReturnTweetsForFollower()
+        {
+            using var context = TestDbContextFactory.CreateInMemoryContext();
+            var controller = new TweetsController(context, null, new NoOpBackgroundTaskQueue());
+
+            var authorId = Guid.Parse("11111111-1111-1111-1111-111111111111"); // seeded user
+            var followerId = Guid.Parse("22222222-2222-2222-2222-222222222222"); // seeded follower
+
+            var now = DateTime.UtcNow;
+            var t1 = new Tweet
+            {
+                Id = Guid.NewGuid(),
+                UserId = authorId,
+                Content = "Tweet A",
+                CreatedAt = now
+            };
+            var t2 = new Tweet
+            {
+                Id = Guid.NewGuid(),
+                UserId = authorId,
+                Content = "Tweet B",
+                CreatedAt = now.AddMinutes(-1)
+            };
+
+            context.Tweets.AddRange(t1, t2);
+            context.Follows.Add(new Follow { UserId = authorId, UserFollowerId = followerId });
+            context.SaveChanges();
+
+            var result = await controller.TimeLine(followerId);
+
+            result.Should().BeOfType<OkObjectResult>();
+            var ok = result as OkObjectResult;
+            ok!.Value.Should().BeAssignableTo<System.Collections.IEnumerable>();
+
+            var tweets = ((System.Collections.Generic.IEnumerable<TweetViewDto>)ok.Value).ToList();
+            tweets.Should().HaveCount(2);
+            tweets[0].Content.Should().Be("Tweet A");
+            tweets[1].Content.Should().Be("Tweet B");
         }
     }
 }

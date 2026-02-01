@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace ApiTwitterUala.BackgroundTasks
+namespace ApiTwitterUala.Services.BackgroundTasks
 {
     public class BackgroundTaskQueue : IBackgroundTaskQueue
     {

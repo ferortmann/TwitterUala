@@ -1,6 +1,6 @@
 using ApiTwitterUala.Controllers;
 using ApiTwitterUala.Domain.Context;
-using ApiTwitterUala.DTOs;
+using ApiTwitterUala.Services.DTOs;
 using ApiTwitterUala.Tests.TestHelpers;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;

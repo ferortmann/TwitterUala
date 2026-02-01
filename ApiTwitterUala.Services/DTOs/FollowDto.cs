@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace ApiTwitterUala.DTOs
+namespace ApiTwitterUala.Services.DTOs
 {
     public sealed class FollowDto : IValidatableObject
     {

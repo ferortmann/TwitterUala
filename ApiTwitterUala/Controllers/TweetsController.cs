@@ -1,10 +1,11 @@
 ﻿using ApiTwitterUala.Domain.Context;
-using ApiTwitterUala.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using ApiTwitterUala.Mappers;
-using ApiTwitterUala.BackgroundTasks;
+using ApiTwitterUala.Services.Mappers;
 using ApiTwitterUala.Cache.Services.Interfaces;
+using ApiTwitterUala.Services.BackgroundTasks;
+using ApiTwitterUala.Services.DTOs;
+using ApiTwitterUala.Services.Cache.Services.Interfaces;
 
 namespace ApiTwitterUala.Controllers
 {
@@ -15,13 +16,15 @@ namespace ApiTwitterUala.Controllers
         private readonly AppDbContext _context;
         private readonly ITweetCacheService? _tweetCache;
         private readonly IBackgroundTaskQueue _taskQueue;
+        private readonly ITweetCacheUpdaterService? _tweetCacheUpdater;
         private const int DefaultPageSize = 30;
 
-        public TweetsController(AppDbContext context, ITweetCacheService? tweetCache = null, IBackgroundTaskQueue? taskQueue = null)
+        public TweetsController(AppDbContext context, ITweetCacheService? tweetCache = null, IBackgroundTaskQueue? taskQueue = null, ITweetCacheUpdaterService? tweetCacheUpdater = null)
         {
             _context = context;
             _tweetCache = tweetCache;
             _taskQueue = taskQueue ?? throw new ArgumentNullException(nameof(taskQueue));
+            _tweetCacheUpdater = tweetCacheUpdater;
         }
 
         [HttpPost]
@@ -61,80 +64,13 @@ namespace ApiTwitterUala.Controllers
 
             if (_tweetCache is not null)
             {
-                var followerIds = await _context.Follows
-                    .AsNoTracking()
-                    .Where(f => f.UserId == entity.UserId)
-                    .Select(f => f.UserFollowerId)
-                    .ToListAsync();
-
-                _taskQueue.QueueBackgroundWorkItem(async ct =>
+                try
                 {
-                    using var sem = new SemaphoreSlim(20);
-
-                    var tasks = followerIds.Select(async fid =>
-                    {
-                        await sem.WaitAsync(ct);
-                        try
-                        {
-                            try
-                            {
-                                await _tweetCache.PrependTweetToUserAsync(fid, viewDto, DefaultPageSize, maxPagesToInvalidate: 2, ct);
-                            }
-                            catch
-                            {
-                            }
-
-                            try
-                            {
-                                var cached = await _tweetCache.GetUserTweetPageAsync(fid, 1, DefaultPageSize, ct);
-                                if (cached is null)
-                                {
-                                    var followedByFollower = await _context.Follows
-                                        .AsNoTracking()
-                                        .Where(ff => ff.UserFollowerId == fid)
-                                        .Select(ff => ff.UserId)
-                                        .ToListAsync(ct);
-
-                                    var page = await _context.Tweets
-                                        .AsNoTracking()
-                                        .Where(t => followedByFollower.Contains(t.UserId))
-                                        .Join(
-                                            _context.Users.AsNoTracking(),
-                                            t => t.UserId,
-                                            u => u.Id,
-                                            (t, u) => new TweetViewDto
-                                            {
-                                                Id = t.Id,
-                                                UserId = t.UserId,
-                                                Content = t.Content,
-                                                CreatedAt = t.CreatedAt,
-                                                UserName = u.UserName
-                                            })
-                                        .OrderByDescending(dto => dto.CreatedAt)
-                                        .Take(DefaultPageSize)
-                                        .ToListAsync(ct);
-
-                                    try
-                                    {
-                                        await _tweetCache.SetUserTweetPageAsync(fid, 1, DefaultPageSize, page, ct);
-                                    }
-                                    catch
-                                    {
-                                    }
-                                }
-                            }
-                            catch
-                            {
-                            }
-                        }
-                        finally
-                        {
-                            sem.Release();
-                        }
-                    });
-
-                    await Task.WhenAll(tasks);
-                });
+                    _tweetCacheUpdater?.EnqueueUpdateForFollowers(viewDto, DefaultPageSize);
+                }
+                catch
+                {
+                }
             }
 
             return Created();
@@ -147,8 +83,8 @@ namespace ApiTwitterUala.Controllers
             return t is null ? NotFound() : Ok(t);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> List([FromQuery] Guid userId, [FromQuery] int page = 1, [FromQuery] int pageSize = DefaultPageSize)
+        [HttpGet("timeline")]
+        public async Task<IActionResult> TimeLine([FromQuery] Guid userId, [FromQuery] int page = 1, [FromQuery] int pageSize = DefaultPageSize)
         {
             if (page < 1) page = 1;
             if (pageSize < 1) pageSize = DefaultPageSize;

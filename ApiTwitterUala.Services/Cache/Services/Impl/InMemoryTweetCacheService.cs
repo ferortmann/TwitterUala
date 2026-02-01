@@ -1,7 +1,10 @@
+using System;
 using System.Collections.Concurrent;
-using System.Text.Json;
 using System.Linq;
-using ApiTwitterUala.DTOs;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+using ApiTwitterUala.Services.DTOs;
 using Microsoft.Extensions.Caching.Distributed;
 using ApiTwitterUala.Cache.Services.Interfaces;
 
@@ -148,6 +151,24 @@ namespace ApiTwitterUala.Cache.Services.Impl
                 {
                     _localCache.TryRemove(key, out _);
                 }
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task InvalidateUserPagesAsync(Guid userId, CancellationToken ct = default)
+        {
+            try
+            {
+                var prefix = $"usertweets:{userId}:";
+                var keys = _localCache.Keys.Where(k => k.StartsWith(prefix, StringComparison.Ordinal)).ToList();
+                foreach (var key in keys)
+                {
+                    _localCache.TryRemove(key, out _);
+                }
+            }
+            catch
+            {
             }
 
             return Task.CompletedTask;

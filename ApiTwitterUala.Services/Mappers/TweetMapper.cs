@@ -1,9 +1,9 @@
 ﻿using ApiTwitterUala.Domain.Entities;
-using ApiTwitterUala.DTOs;
+using ApiTwitterUala.Services.DTOs;
 
-namespace ApiTwitterUala.Mappers
+namespace ApiTwitterUala.Services.Mappers
 {
-    internal static class TweetMapper
+    public static class TweetMapper
     {
         public static Tweet ToEntity(this TweetDto dto)
             => new()

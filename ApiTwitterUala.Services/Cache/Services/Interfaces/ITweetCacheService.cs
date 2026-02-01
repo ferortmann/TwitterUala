@@ -1,5 +1,4 @@
-using ApiTwitterUala.Domain.Entities;
-using ApiTwitterUala.DTOs;
+using ApiTwitterUala.Services.DTOs;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -17,6 +16,9 @@ namespace ApiTwitterUala.Cache.Services.Interfaces
 
         Task PrependTweetAsync(TweetViewDto tweet, int pageSize, int maxPagesToInvalidate = 3, CancellationToken ct = default);
         Task PrependTweetToUserAsync(Guid userId, TweetViewDto tweet, int pageSize, int maxPagesToInvalidate = 3, CancellationToken ct = default);
+
         Task InvalidateAllPagesAsync(CancellationToken ct = default);
+
+        Task InvalidateUserPagesAsync(Guid userId, CancellationToken ct = default);
     }
 }

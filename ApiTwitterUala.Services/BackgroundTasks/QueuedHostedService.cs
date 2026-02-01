@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace ApiTwitterUala.BackgroundTasks
+namespace ApiTwitterUala.Services.BackgroundTasks
 {
     public class QueuedHostedService : BackgroundService
     {

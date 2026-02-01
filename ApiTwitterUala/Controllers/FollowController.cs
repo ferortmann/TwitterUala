@@ -1,10 +1,11 @@
-﻿using ApiTwitterUala.Domain.Context;
-using ApiTwitterUala.DTOs;
-using ApiTwitterUala.Mappers;
+﻿using ApiTwitterUala.Cache.Services.Interfaces;
+using ApiTwitterUala.Domain.Context;
 using ApiTwitterUala.Domain.Entities;
+using ApiTwitterUala.Services.DTOs;
+using ApiTwitterUala.Services.Mappers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using ApiTwitterUala.Cache.Services.Interfaces;
+using System.Threading;
 
 namespace ApiTwitterUala.Controllers
 {
@@ -13,12 +14,14 @@ namespace ApiTwitterUala.Controllers
     public class FollowController : ControllerBase
     {
         private readonly AppDbContext _context;
-
         private readonly IFollowCacheService? _followCache;
-        public FollowController(AppDbContext context, IFollowCacheService? followCache = null)
+        private readonly ITweetCacheService? _tweetCache;
+
+        public FollowController(AppDbContext context, IFollowCacheService? followCache = null, ITweetCacheService? tweetCache = null)
         {
             _context = context;
             _followCache = followCache;
+            _tweetCache = tweetCache;
         }
 
         [HttpPost]
@@ -44,8 +47,12 @@ namespace ApiTwitterUala.Controllers
             try
             {
                 await _context.SaveChangesAsync(ct);
+
                 if (_followCache is not null)
                     await _followCache.InvalidateFollowersAsync(followDto.UserId, ct);
+
+                if (_tweetCache is not null)
+                    try { await _tweetCache.InvalidateUserPagesAsync(followDto.UserFollowerId, ct); } catch { }
             }
             catch (DbUpdateException ex)
             {
@@ -60,12 +67,17 @@ namespace ApiTwitterUala.Controllers
         {
             var entity = await _context.Follows.FindAsync(new object?[] { userId, userFollowerId }, ct);
             if (entity is null)
-                return NotFound();  
+                return NotFound();
 
             _context.Follows.Remove(entity);
             await _context.SaveChangesAsync(ct);
+
             if (_followCache is not null)
-                await _followCache.InvalidateFollowersAsync(userId, ct);
+                try { await _followCache.InvalidateFollowersAsync(userId, ct); } catch { }
+
+            if (_tweetCache is not null)
+                try { await _tweetCache.InvalidateUserPagesAsync(userFollowerId, ct); } catch { }
+
             return NoContent();
         }
 
@@ -90,9 +102,7 @@ namespace ApiTwitterUala.Controllers
                     .ToListAsync(ct);
 
                 if (_followCache is not null)
-                {
                     try { await _followCache.SetFollowerIdsAsync(userId, followerIds, ct); } catch { }
-                }
             }
 
             var followers = await _context.Users
