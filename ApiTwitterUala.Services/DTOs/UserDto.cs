@@ -9,7 +9,7 @@ namespace ApiTwitterUala.Services.DTOs
 
         [Required]
         [MaxLength(100)]
-        [RegularExpression(@"^[A-Za-z0-9 ]+$", ErrorMessage = "Solo caracteres alfanuméricos y espacios permitidos.")]
+        [RegularExpression(@"^[A-Za-z0-9 _-]+$", ErrorMessage = "Solo caracteres alfanuméricos y espacios permitidos.")]
         public string UserName { get; set; } = string.Empty;
     }
 }
